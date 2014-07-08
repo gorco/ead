@@ -44,24 +44,61 @@ import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop.Source;
 import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop.Target;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 
+import es.eucm.ead.editor.view.widgets.FixedButton;
 import es.eucm.ead.editor.view.widgets.StretchableButton;
 
+/**
+ * Horizontal {@link LinearLayout} with drag and drop feature. Allow to move its
+ * children. If share the {@link DragAndDrop} you can make that can move the
+ * actors to other {@link TrackLayout}.
+ * 
+ * Its children have a left margin respected to origin. This margin corresponds
+ * to X coordinate of child in the layout.
+ * 
+ * The layout allow that a {@link FixedButton} is overlapped with other
+ * children.
+ * 
+ */
 public class TrackLayout extends LinearLayout {
 
 	private DragAndDrop dragNDrop;
 
+	/**
+	 * Creates a new {@link TrackLayout} with a new {@link DragAndDrop} and
+	 * without background.
+	 * 
+	 */
 	public TrackLayout() {
 		this(null, new DragAndDrop());
 	}
 
+	/**
+	 * Creates a new {@link TrackLayout} with a dragNDrop {@link DragAndDrop}
+	 * and without background.
+	 * 
+	 * @param dragNDrop
+	 */
 	public TrackLayout(DragAndDrop dragNDrop) {
 		this(null, dragNDrop);
 	}
 
+	/**
+	 * Creates a new {@link TrackLayout} with a new {@link DragAndDrop} and a
+	 * background.
+	 * 
+	 * @param background
+	 */
 	public TrackLayout(Drawable background) {
 		this(background, new DragAndDrop());
 	}
 
+	/**
+	 * Creates a new {@link TrackLayout} with a dragNDrop {@link DragAndDrop}
+	 * and a background.
+	 * 
+	 * @param background
+	 * @param dragNDrop
+	 */
 	public TrackLayout(Drawable background, DragAndDrop dragNDrop) {
 		super(true, background);
 
@@ -90,40 +127,42 @@ public class TrackLayout extends LinearLayout {
 	}
 
 	@Override
-	public Constraints add(int index, Actor actor) {
+	public TrackConstraints add(int index, Actor actor) {
 		return add(index, actor, 0);
 	}
 
 	@Override
-	public Constraints add(Actor actor) {
+	public TrackConstraints add(Actor actor) {
 		return add(-1, actor, 0);
 	}
 
 	/**
-	 * Adds a widget with margin to the container
+	 * Adds a widget with left margin to the container
 	 * 
 	 * @param actor
 	 *            the widget to add
-	 * @param margin
-	 *            the margin to the widget
+	 * @param leftMargin
+	 *            the left margin to the widget
 	 * @return the constraints for the widget
 	 */
-	public Constraints add(Actor actor, float margin) {
-		return add(-1, actor, margin);
+	public TrackConstraints add(Actor actor, float leftMargin) {
+		return add(-1, actor, leftMargin);
 	}
 
 	/**
-	 * Adds a widget with margin to the container
+	 * Adds a widget with left margin to the container
 	 * 
 	 * @param index
 	 *            position to add the actor
 	 * @param actor
 	 *            the widget to add
+	 * @param leftMargin
+	 *            the left margin to the widget
 	 * @return the constraints for the widget
 	 */
-	public Constraints add(int index, final Actor actor, float margin) {
+	public TrackConstraints add(int index, final Actor actor, float leftMargin) {
 		TrackConstraints c = new TrackConstraints(actor);
-		c.margin.setLeft(margin);
+		c.margin.setLeft(leftMargin);
 		c.setWidth(actor.getWidth());
 		if (index == -1) {
 			constraints.add(c);
@@ -177,13 +216,13 @@ public class TrackLayout extends LinearLayout {
 
 			}
 		}
-		return -1;
+		return 0;
 	}
 
-	public void setLeftMargin(Actor actor, float margin) {
+	public void setLeftMargin(Actor actor, float leftMargin) {
 		for (Constraints c : constraints) {
 			if (c.actor == actor) {
-				((TrackConstraints) c).marginLeft(margin);
+				((TrackConstraints) c).marginLeft(leftMargin);
 			}
 		}
 	}
@@ -207,38 +246,45 @@ public class TrackLayout extends LinearLayout {
 
 		for (Constraints c : constraints) {
 			if (c.getActor().isVisible() || computeInvisibles) {
-				Actor actor = c.getActor();
+				TrackConstraints tCons = (TrackConstraints) c;
+
+				Actor actor = tCons.getActor();
 				float width = actorWidth(actor) + 0.0f;
 
 				float x = 0;
 
-				float auxX = leftX + marginLeft(c);
-				TrackConstraints tCons = (TrackConstraints) c;
+				float auxX = leftX + marginLeft(tCons);
+
 				if (actor instanceof StretchableButton
 						&& ((StretchableButton) actor).isDragLeft()) {
-					if (beforeX + lastW <= auxX + c.getWidth() - width) {
-						tCons.marginLeft(marginLeft(c) + (c.getWidth() - width));
+					if (beforeX + lastW <= auxX + tCons.getWidth() - width) {
+						tCons.marginLeft(marginLeft(tCons)
+								+ (tCons.getWidth() - width));
 					}
-				} else if (auxX < beforeX + lastW) {
+				} else if (auxX < beforeX + lastW
+						&& !(actor instanceof FixedButton)) {
 					tCons.marginLeft(beforeX + lastW);
 				}
-				x = leftX + marginLeft(c);
 
-				float height = expandY(c) ? containerHeight() - paddingHeight()
-						- marginHeight(c) : actorHeight(actor);
+				if (actor instanceof FixedButton) {
+					actor.toFront();
+					x = marginLeft(tCons);
+				} else {
+					x = leftX + marginLeft(tCons);
+					beforeX = x;
+					lastW = width;
+					tCons.setWidth(width);
+				}
 
-				float y = getYAligned(c, height);
+				float height = expandY(tCons) ? containerHeight()
+						- paddingHeight() - marginHeight(tCons)
+						: actorHeight(actor);
+
+				float y = getYAligned(tCons, height);
 
 				setBoundsForActor(actor, x, y, width, height);
-				beforeX = x;
-				lastW = width;
-				tCons.setWidth(width);
 			}
 		}
-	}
-
-	public DragAndDrop getDragAndDrop() {
-		return dragNDrop;
 	}
 
 	/**

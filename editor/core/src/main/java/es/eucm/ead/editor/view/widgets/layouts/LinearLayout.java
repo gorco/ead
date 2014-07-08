@@ -547,10 +547,5 @@ public class LinearLayout extends AbstractWidget {
 			this.verticalAlign = Align.top;
 			return this;
 		}
-
-		public float getWidth() {
-			// TODO Auto-generated method stub
-			return 0;
-		}
 	}
 }
