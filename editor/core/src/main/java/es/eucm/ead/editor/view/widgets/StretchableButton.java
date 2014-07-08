@@ -54,6 +54,9 @@ public class StretchableButton extends LinearLayout {
 
 	private Container container;
 
+	private boolean leftStr;
+	private boolean rightStr;
+
 	public StretchableButton(Skin skin) {
 		super(true);
 		container = new StretchablePart();
@@ -88,12 +91,22 @@ public class StretchableButton extends LinearLayout {
 	}
 
 	private void init(Skin skin) {
+		leftStr = false;
+		rightStr = false;
 		DraggablePart left = new DraggablePart(skin, this, container, true);
 		DraggablePart right = new DraggablePart(skin, this, container, false);
 		this.add(left).expandY();
 		this.add(container);
 		container.toBack();
 		this.add(right).expandY();
+	}
+
+	public boolean isDragLeft() {
+		return leftStr;
+	}
+
+	public boolean isDragRight() {
+		return rightStr;
 	}
 
 	/**
@@ -117,17 +130,28 @@ public class StretchableButton extends LinearLayout {
 				public void touchDragged(InputEvent event, float x, float y,
 						int pointer) {
 					if (first && container.getWidth() >= 0) {
+						parent.rightStr = false;
+						parent.leftStr = true;
 						container.setWidth(container.getWidth() - x);
 						if (container.getWidth() > 0) {
 							parent.setX(x);
 						}
 					} else if (container.getWidth() >= 0) {
+						parent.leftStr = false;
+						parent.rightStr = true;
 						container.setWidth(container.getWidth() + x);
 					}
 					if (container.getWidth() <= 0) {
 						container.setWidth(0);
 					}
 					container.invalidateHierarchy();
+				}
+
+				@Override
+				public void touchUp(InputEvent event, float x, float y,
+						int pointer, int button) {
+					parent.leftStr = false;
+					parent.rightStr = false;
 				}
 			});
 		}
