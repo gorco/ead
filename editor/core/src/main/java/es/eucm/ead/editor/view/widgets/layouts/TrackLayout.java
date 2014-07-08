@@ -36,30 +36,17 @@
  */
 package es.eucm.ead.editor.view.widgets.layouts;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.utils.Align;
 import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop;
 import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop.Payload;
 import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop.Source;
 import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop.Target;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.badlogic.gdx.utils.Array;
 
-import es.eucm.ead.editor.view.widgets.AbstractWidget;
 import es.eucm.ead.editor.view.widgets.StretchableButton;
 
-public class TrackLayout extends AbstractWidget {
-
-	private boolean computeInvisibles;
-
-	private Drawable background;
-
-	protected Array<Constraints> constraints;
-
-	protected Insets padding;
+public class TrackLayout extends LinearLayout {
 
 	private DragAndDrop dragNDrop;
 
@@ -76,10 +63,9 @@ public class TrackLayout extends AbstractWidget {
 	}
 
 	public TrackLayout(Drawable background, DragAndDrop dragNDrop) {
+		super(true, background);
+
 		this.dragNDrop = dragNDrop;
-		this.background = background;
-		this.constraints = new Array<Constraints>();
-		this.padding = new Insets();
 
 		dragNDrop.addTarget(new Target(this) {
 			@Override
@@ -103,49 +89,27 @@ public class TrackLayout extends AbstractWidget {
 		});
 	}
 
-	/**
-	 * Sets if invisible widgets should be taken into account for the layout
-	 */
-	public void setComputeInvisibles(boolean computeInvisibles) {
-		this.computeInvisibles = computeInvisibles;
+	@Override
+	public Constraints add(int index, Actor actor) {
+		return add(index, actor, 0);
+	}
+
+	@Override
+	public Constraints add(Actor actor) {
+		return add(-1, actor, 0);
 	}
 
 	/**
-	 * Sets background for the widget
-	 */
-	public TrackLayout background(Drawable background) {
-		this.background = background;
-		return this;
-	}
-
-	/**
-	 * Sets the padding for the widget
-	 */
-	public TrackLayout pad(float padding) {
-		this.padding.set(padding);
-		return this;
-	}
-
-	/**
-	 * Sets the padding for the widget
-	 */
-	public TrackLayout pad(float left, float top, float right, float bottom) {
-		this.padding.set(left, top, right, bottom);
-		return this;
-	}
-
-	/**
-	 * Adds a widget to the container
+	 * Adds a widget with margin to the container
 	 * 
-	 * @param index
-	 *            position to add the actor
 	 * @param actor
 	 *            the widget to add
+	 * @param margin
+	 *            the margin to the widget
 	 * @return the constraints for the widget
 	 */
-	public Constraints add(int index, Actor actor) {
-		Constraints c = add(index, actor, 0);
-		return c;
+	public Constraints add(Actor actor, float margin) {
+		return add(-1, actor, margin);
 	}
 
 	/**
@@ -158,7 +122,7 @@ public class TrackLayout extends AbstractWidget {
 	 * @return the constraints for the widget
 	 */
 	public Constraints add(int index, final Actor actor, float margin) {
-		Constraints c = new Constraints(actor);
+		TrackConstraints c = new TrackConstraints(actor);
 		c.margin.setLeft(margin);
 		c.setWidth(actor.getWidth());
 		if (index == -1) {
@@ -206,60 +170,6 @@ public class TrackLayout extends AbstractWidget {
 		return c;
 	}
 
-	/**
-	 * Adds a widget to the container
-	 * 
-	 * @param actor
-	 *            the widget to add
-	 * @return the constraints for the widget
-	 */
-	public Constraints add(Actor actor) {
-		return add(-1, actor);
-	}
-
-	/**
-	 * Adds a widget with margin to the container
-	 * 
-	 * @param actor
-	 *            the widget to add
-	 * @param margin
-	 *            the margin to the widget
-	 * @return the constraints for the widget
-	 */
-	public Constraints add(Actor actor, float margin) {
-		return add(-1, actor, margin);
-	}
-
-	@Override
-	protected void drawChildren(Batch batch, float parentAlpha) {
-		batch.setColor(Color.WHITE);
-		if (background != null) {
-			background.draw(batch, 0, 0, getWidth(), getHeight());
-		}
-		super.drawChildren(batch, parentAlpha);
-	}
-
-	@Override
-	public float getPrefWidth() {
-		return prefWidth();
-	}
-
-	@Override
-	public float getPrefHeight() {
-		return prefHeight();
-	}
-
-	@Override
-	public boolean removeActor(Actor actor) {
-		for (Constraints c : constraints) {
-			if (c.actor == actor) {
-				constraints.removeValue(c, true);
-				break;
-			}
-		}
-		return super.removeActor(actor);
-	}
-
 	public float getLeftMargin(Actor actor) {
 		for (Constraints c : constraints) {
 			if (c.actor == actor) {
@@ -273,15 +183,9 @@ public class TrackLayout extends AbstractWidget {
 	public void setLeftMargin(Actor actor, float margin) {
 		for (Constraints c : constraints) {
 			if (c.actor == actor) {
-				c.marginLeft(margin);
+				((TrackConstraints) c).marginLeft(margin);
 			}
 		}
-	}
-
-	@Override
-	public void clearChildren() {
-		constraints.clear();
-		super.clearChildren();
 	}
 
 	@Override
@@ -302,21 +206,21 @@ public class TrackLayout extends AbstractWidget {
 		float leftX = ignorePadding ? 0.0f : paddingLeft();
 
 		for (Constraints c : constraints) {
-			if (c.actor.isVisible() || computeInvisibles) {
-				Actor actor = c.actor;
+			if (c.getActor().isVisible() || computeInvisibles) {
+				Actor actor = c.getActor();
 				float width = actorWidth(actor) + 0.0f;
 
 				float x = 0;
 
 				float auxX = leftX + marginLeft(c);
-
+				TrackConstraints tCons = (TrackConstraints) c;
 				if (actor instanceof StretchableButton
 						&& ((StretchableButton) actor).isDragLeft()) {
 					if (beforeX + lastW <= auxX + c.getWidth() - width) {
-						c.marginLeft(marginLeft(c) + (c.getWidth() - width));
+						tCons.marginLeft(marginLeft(c) + (c.getWidth() - width));
 					}
 				} else if (auxX < beforeX + lastW) {
-					c.marginLeft(beforeX + lastW);
+					tCons.marginLeft(beforeX + lastW);
 				}
 				x = leftX + marginLeft(c);
 
@@ -328,32 +232,8 @@ public class TrackLayout extends AbstractWidget {
 				setBoundsForActor(actor, x, y, width, height);
 				beforeX = x;
 				lastW = width;
-				c.setWidth(width);
+				tCons.setWidth(width);
 			}
-		}
-	}
-
-	/**
-	 * 
-	 * @param c
-	 *            constrains
-	 * @param height
-	 *            widget height
-	 * @return the y coordinate according to the alignment and height of the
-	 *         widget, calculated from the container size.
-	 */
-	private float getYAligned(Constraints c, float height) {
-		switch (verticalAlign(c)) {
-		case Align.top:
-		case Align.right:
-			return (containerHeight() - height - paddingTop() - marginTop(c));
-		case Align.left:
-		case Align.bottom:
-			return paddingBottom() + marginBottom(c);
-		default:
-			// Align.center
-			return (containerHeight() - height - paddingHeight() - marginHeight(c))
-					/ 2.0f + paddingBottom() + marginBottom(c);
 		}
 	}
 
@@ -361,124 +241,18 @@ public class TrackLayout extends AbstractWidget {
 		return dragNDrop;
 	}
 
-	public float prefWidth() {
-		float prefWidth = 0.0f;
-		for (Constraints c : constraints) {
-			if (c.actor.isVisible() || computeInvisibles) {
-				prefWidth += marginWidth(c) + actorWidth(c.actor);
-			}
-		}
-		return prefWidth + paddingWidth();
-	}
-
-	public float prefHeight() {
-		float prefHeight = 0.0f;
-		for (Constraints c : constraints) {
-			if (c.actor.isVisible() || computeInvisibles) {
-				prefHeight = Math.max(prefHeight, marginHeight(c)
-						+ actorHeight(c.actor));
-			}
-		}
-		return prefHeight + paddingHeight();
-	}
-
-	private float containerHeight() {
-		return getHeight();
-	}
-
-	private float availableWidth() {
-		return getWidth() - padding.getWidth();
-	}
-
-	private float paddingWidth() {
-		return padding.getWidth();
-	}
-
-	private float actorWidth(Actor actor) {
-		return getPrefWidth(actor);
-	}
-
-	private float actorHeight(Actor actor) {
-		return getPrefHeight(actor);
-	}
-
-	private float paddingLeft() {
-		return padding.left;
-	}
-
-	private float paddingBottom() {
-		return padding.bottom;
-	}
-
-	private float paddingHeight() {
-		return padding.getHeight();
-	}
-
-	private float paddingTop() {
-		return padding.top;
-	}
-
-	private float marginWidth(Constraints c) {
-		return c.margin.getWidth();
-	}
-
-	private float marginHeight(Constraints c) {
-		return c.margin.getHeight();
-	}
-
-	private float marginLeft(Constraints c) {
-		return c.margin.left;
-	}
-
-	private float marginTop(Constraints c) {
-		return c.margin.top;
-	}
-
-	private float marginBottom(Constraints c) {
-		return c.margin.bottom;
-	}
-
-	private boolean expandY(Constraints c) {
-		return c.expandY;
-	}
-
-	private int verticalAlign(Constraints c) {
-		return c.verticalAlign;
-	}
-
-	private void setBoundsForActor(Actor actor, float x, float y, float width,
-			float height) {
-		super.setBounds(actor, x, y, width, height);
-	}
-
 	/**
-	 * Holds contraints for a widget inside a LinearLayout container
+	 * Holds contraints for a widget inside a TrackLayout container
 	 */
-	public static class Constraints {
-
-		private Actor actor;
-
-		private Insets margin = new Insets();
-
-		private boolean expandX = false;
-
-		private boolean expandY = false;
-
-		private int verticalAlign;
-
-		private int horizontalAlign;
+	public static class TrackConstraints extends Constraints {
 
 		private float w;
 
-		public Constraints(Actor actor) {
-			this.actor = actor;
+		public TrackConstraints(Actor actor) {
+			super(actor);
 		}
 
-		public Actor getActor() {
-			return actor;
-		}
-
-		public Constraints setWidth(float m) {
+		public TrackConstraints setWidth(float m) {
 			w = m;
 			return this;
 		}
@@ -487,69 +261,8 @@ public class TrackLayout extends AbstractWidget {
 			return w;
 		}
 
-		public Constraints margin(float m) {
-			margin.set(m);
-			return this;
-		}
-
-		public Constraints marginLeft(float m) {
+		public TrackConstraints marginLeft(float m) {
 			margin.setLeft(m);
-			return this;
-		}
-
-		public Constraints margin(float left, float top, float right,
-				float bottom) {
-			margin.set(left, top, right, bottom);
-			return this;
-		}
-
-		public Constraints expand(boolean expandX, boolean expandY) {
-			this.expandX = expandX;
-			this.expandY = expandY;
-			return this;
-		}
-
-		public Constraints expandX() {
-			this.expandX = true;
-			return this;
-		}
-
-		public Constraints expandY() {
-			this.expandY = true;
-			return this;
-		}
-
-		public Constraints centerX() {
-			this.horizontalAlign = Align.center;
-			return this;
-		}
-
-		public Constraints centerY() {
-			this.verticalAlign = Align.center;
-			return this;
-		}
-
-		public Constraints left() {
-			this.horizontalAlign = Align.left;
-			return this;
-		}
-
-		public Constraints right() {
-			this.horizontalAlign = Align.right;
-			return this;
-		}
-
-		public Constraints bottom() {
-			this.verticalAlign = Align.bottom;
-			return this;
-		}
-
-		public Constraints top() {
-			this.verticalAlign = Align.top;
-			return this;
-		}
-
-		public Constraints getWidht() {
 			return this;
 		}
 	}
