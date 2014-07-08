@@ -41,18 +41,20 @@ import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.DragAndDrop;
 
 import es.eucm.ead.editor.editorui.EditorUITest;
+import es.eucm.ead.editor.view.widgets.FixedButton;
 import es.eucm.ead.editor.view.widgets.IconButton;
 import es.eucm.ead.editor.view.widgets.StretchableButton;
 import es.eucm.ead.editor.view.widgets.layouts.LinearLayout;
 import es.eucm.ead.editor.view.widgets.layouts.TrackLayout;
 
-public class StretchableButtonTest extends EditorUITest {
+public class TrackLayoutTest extends EditorUITest {
 
 	public static void main(String args[]) {
-		new LwjglApplication(new StretchableButtonTest(),
-				"Test for TweenTrack", 1000, 800);
+		new LwjglApplication(new TrackLayoutTest(), "Test for TweenTrack",
+				1000, 800);
 	}
 
 	@Override
@@ -85,10 +87,14 @@ public class StretchableButtonTest extends EditorUITest {
 		StretchableButton st4 = new StretchableButton(button4,
 				skin.getDrawable("blank"), skin);
 
+		FixedButton dbut1 = new FixedButton(skin.getDrawable("paste24x24"),
+				skin.getDrawable("copy24x24"), skin);
+
 		LinearLayout table = new LinearLayout(false);
 
-		TrackLayout t1 = new TrackLayout();
-		TrackLayout t2 = new TrackLayout(t1.getDragAndDrop());
+		DragAndDrop tracksDragNDrop = new DragAndDrop();
+		TrackLayout t1 = new TrackLayout(tracksDragNDrop);
+		TrackLayout t2 = new TrackLayout(tracksDragNDrop);
 
 		table.add(t1).expand(true, true);
 		table.add(t2).expand(true, true);
@@ -101,6 +107,7 @@ public class StretchableButtonTest extends EditorUITest {
 
 		t2.add(st3, 75f);
 		t2.add(st4, 200f);
+		t2.add(dbut1, 205f);
 
 		st3.addListener(new ClickListener() {
 			@Override
