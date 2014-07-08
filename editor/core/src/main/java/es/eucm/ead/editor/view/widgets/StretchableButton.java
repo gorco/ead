@@ -54,8 +54,8 @@ public class StretchableButton extends LinearLayout {
 
 	private Container container;
 
-	private boolean leftStr;
-	private boolean rightStr;
+	private boolean leftDragged;
+	private boolean rightDragged;
 
 	public StretchableButton(Skin skin) {
 		super(true);
@@ -91,8 +91,8 @@ public class StretchableButton extends LinearLayout {
 	}
 
 	private void init(Skin skin) {
-		leftStr = false;
-		rightStr = false;
+		leftDragged = false;
+		rightDragged = false;
 		DraggablePart left = new DraggablePart(skin, this, container, true);
 		DraggablePart right = new DraggablePart(skin, this, container, false);
 		this.add(left).expandY();
@@ -102,11 +102,11 @@ public class StretchableButton extends LinearLayout {
 	}
 
 	public boolean isDragLeft() {
-		return leftStr;
+		return leftDragged;
 	}
 
 	public boolean isDragRight() {
-		return rightStr;
+		return rightDragged;
 	}
 
 	/**
@@ -130,15 +130,15 @@ public class StretchableButton extends LinearLayout {
 				public void touchDragged(InputEvent event, float x, float y,
 						int pointer) {
 					if (first && container.getWidth() >= 0) {
-						parent.rightStr = false;
-						parent.leftStr = true;
+						parent.rightDragged = false;
+						parent.leftDragged = true;
 						container.setWidth(container.getWidth() - x);
 						if (container.getWidth() > 0) {
 							parent.setX(x);
 						}
 					} else if (container.getWidth() >= 0) {
-						parent.leftStr = false;
-						parent.rightStr = true;
+						parent.leftDragged = false;
+						parent.rightDragged = true;
 						container.setWidth(container.getWidth() + x);
 					}
 					if (container.getWidth() <= 0) {
@@ -150,8 +150,8 @@ public class StretchableButton extends LinearLayout {
 				@Override
 				public void touchUp(InputEvent event, float x, float y,
 						int pointer, int button) {
-					parent.leftStr = false;
-					parent.rightStr = false;
+					parent.leftDragged = false;
+					parent.rightDragged = false;
 				}
 			});
 		}
