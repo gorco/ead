@@ -116,7 +116,8 @@ public class TrackLayout extends LinearLayout {
 					int pointer) {
 				int index = 0;
 				for (Actor actor : TrackLayout.this.getChildren()) {
-					if (x > getLeftMargin(actor) + actor.getWidth() / 2) {
+					if (!(actor instanceof FixedButton)
+							&& x > getLeftMargin(actor) + actor.getWidth() / 2) {
 						index++;
 					}
 				}
@@ -174,15 +175,16 @@ public class TrackLayout extends LinearLayout {
 
 		dragNDrop.addSource(new Source(actor) {
 
-			private float firstX = getLeftMargin(actor);
-			private int index = TrackLayout.this.getChildren().indexOf(actor,
-					true);
+			private float firstX;
+			private int index;
 
 			@Override
 			public Payload dragStart(InputEvent event, float x, float y,
 					int pointer) {
-
 				Payload payload = new Payload();
+
+				firstX = getLeftMargin(actor);
+				index = TrackLayout.this.getChildren().indexOf(actor, true);
 
 				if (actor instanceof StretchableButton) {
 					StretchableButton aux = (StretchableButton) actor;
@@ -191,7 +193,6 @@ public class TrackLayout extends LinearLayout {
 					}
 				}
 
-				payload.setObject(index);
 				payload.setDragActor(actor);
 				return payload;
 			}
@@ -203,6 +204,7 @@ public class TrackLayout extends LinearLayout {
 					TrackLayout.this.add(index, actor, firstX);
 					layout();
 				}
+				dragNDrop.removeSource(this);
 			}
 		});
 
