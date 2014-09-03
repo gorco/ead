@@ -13,6 +13,7 @@
       rose: { a: 1, r: 0.98,  g: 0.75, b: 0.75 },
     },
     com.badlogic.gdx.scenes.scene2d.ui.TextButton$TextButtonStyle: {
+    	default: { up: white-button-up, down: white-button-down, font: regular, fontColor: black, downFontColor: light-gray },
         white: { up: white-button-up, down: white-button-down, font: regular, fontColor: white, downFontColor: light-gray }
     },
     com.badlogic.gdx.scenes.scene2d.ui.ImageButton$ImageButtonStyle: {
