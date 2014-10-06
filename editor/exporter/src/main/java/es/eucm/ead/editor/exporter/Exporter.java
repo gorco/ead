@@ -164,6 +164,43 @@ public class Exporter {
 			}
 		}
 
+		// Register local variables from scenes
+		for (ModelEntity entity : modelEntity.getChildren()) {
+			for (ModelComponent modelComponent : entity.getComponents()) {
+				if (modelComponent instanceof Variables) {
+					variables = (Variables) modelComponent;
+					for (VariableDef variableDef : variables
+							.getVariablesDefinitions()) {
+						ChangeVar changeVar = new ChangeVar();
+						changeVar.setVariable(variableDef.getName());
+						String initialValue = variableDef.getInitialValue();
+						if (initialValue.toLowerCase().equals("true")) {
+							initialValue = "btrue";
+						} else if (initialValue.toLowerCase().equals("false")) {
+							initialValue = "bfalse";
+						} else {
+							try {
+								Integer.parseInt(initialValue);
+								initialValue = "i" + initialValue;
+							} catch (NumberFormatException e) {
+								try {
+									Float.parseFloat(initialValue);
+									initialValue = "f" + initialValue;
+								} catch (NumberFormatException e2) {
+									if (!initialValue.startsWith("(")) {
+										initialValue = "s" + initialValue;
+									}
+								}
+							}
+						}
+						changeVar.setExpression(initialValue);
+						changeVar.setContext(ChangeVar.Context.LOCAL);
+						initBehavior.getEffects().add(changeVar);
+					}
+				}
+			}
+		}
+
 		if (gameData != null) {
 			// Load initial scene
 			AddEntity loadSceneContent = new AddEntity();

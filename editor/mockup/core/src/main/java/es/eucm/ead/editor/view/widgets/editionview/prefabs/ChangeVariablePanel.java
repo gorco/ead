@@ -51,6 +51,7 @@ import es.eucm.ead.editor.control.actions.irreversibles.scene.ClearBehaviorEffec
 import es.eucm.ead.editor.control.actions.irreversibles.scene.RemoveBehavior;
 import es.eucm.ead.editor.view.widgets.PositionedHiddenPanel.Position;
 import es.eucm.ead.editor.view.widgets.ScrollPaneDif;
+import es.eucm.ead.editor.view.widgets.editionview.variables.VariableSelectorWidget;
 import es.eucm.ead.editor.view.widgets.editionview.variables.VariablesAndGroup;
 import es.eucm.ead.editor.view.widgets.editionview.variables.VariablesTable;
 import es.eucm.ead.schema.components.behaviors.Behavior;
@@ -124,7 +125,8 @@ public class ChangeVariablePanel extends PrefabComponentPanel {
 				if (effect instanceof ChangeVar) {
 					ChangeVar changeVar = (ChangeVar) effect;
 					varOp.addVariableWidget(varOp.variableWidget(
-							changeVar.getVariable(), changeVar.getExpression()));
+							changeVar.getVariable(), changeVar.getExpression(),
+							changeVar.getContext().equals(Context.LOCAL)));
 				}
 			}
 		} else {
@@ -136,73 +138,29 @@ public class ChangeVariablePanel extends PrefabComponentPanel {
 		if (component != null) {
 			controller.action(ClearBehaviorEffects.class, component);
 		}
-		if (!varOp.isEmpty()) {
-			String expression = varOp.getExpression();
-			String[] fields = expression.split(" ");
-
-			Array<String> stack = new Array<String>();
-
-			for (int i = 0; i < fields.length; i++) {
-				String aux = fields[i];
-				if (!aux.equals(")")) {
-					stack.add(aux);
-				} else {
-					evaluate(stack);
-				}
-			}
-		} else if (component != null) {
+		Array<VariableSelectorWidget> arrayWidgets = varOp
+				.getVariablesWidgets();
+		if (component != null && arrayWidgets.size == 0) {
 			controller.action(RemoveBehavior.class, component);
 			setUsed(false);
-		}
-	}
-
-	private void evaluate(Array<String> stack) {
-		Array<String> args = new Array<String>();
-
-		String toAdd = "";
-
-		String aux = stack.pop();
-		while (!aux.equals("(")) {
-			if (aux.equals("eq")) {
-				addChangeEffect(args);
-			} else if (aux.equals("not")) {
-				String expression = "";
-				for (int i = args.size - 1; i >= 0; i--) {
-					expression += (args.get(i) + " ");
-				}
-				toAdd = "( not " + expression + ")";
-			} else if (aux.equals("and")) {
-				// Do nothing
-			} else {
-				args.add(aux);
-			}
-			aux = stack.pop();
-		}
-		if (!toAdd.equals("")) {
-			stack.add(toAdd);
-		}
-	}
-
-	private void addChangeEffect(Array<String> args) {
-		if (args.size == 2) {
-			String var0 = args.get(0);
-			String var1 = args.get(1);
-			changeVar = new ChangeVar();
-			changeVar.setContext(Context.GLOBAL);
-			if (var0.contains("$") && !var0.contains(" ")) {
-				changeVar.setVariable(var0.replace("$", ""));
-				changeVar.setExpression(var1);
-			} else {
-				changeVar.setVariable(var1.replace("$", ""));
-				changeVar.setExpression(var0);
-			}
+		} else {
 			if (component == null) {
 				component = new Behavior();
 				controller.action(AddBehaviorPrefab.class, component,
 						componentId);
 			}
-			controller.action(AddBehaviorEffect.class, component, changeVar);
-			setUsed(true);
+			for (VariableSelectorWidget varWidget : arrayWidgets) {
+				changeVar = new ChangeVar();
+				changeVar.setContext(varWidget.isLocal() ? Context.LOCAL
+						: Context.GLOBAL);
+				changeVar.setVariable(varWidget.getVarNameButton().getText()
+						.toString());
+				changeVar.setExpression(varWidget.getState());
+
+				controller
+						.action(AddBehaviorEffect.class, component, changeVar);
+				setUsed(true);
+			}
 		}
 	}
 }

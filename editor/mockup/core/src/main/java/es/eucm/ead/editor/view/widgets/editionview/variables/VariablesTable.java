@@ -43,6 +43,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.TextInputListener;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.Cell;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -51,17 +52,24 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 
 import es.eucm.ead.editor.control.Controller;
+import es.eucm.ead.editor.control.MockupViews;
+import es.eucm.ead.editor.control.Selection;
+import es.eucm.ead.editor.control.Toasts;
 import es.eucm.ead.editor.control.actions.irreversibles.game.AddNewVariableDef;
 import es.eucm.ead.editor.control.actions.irreversibles.game.AddVariables;
 import es.eucm.ead.editor.model.Model.ModelListener;
+import es.eucm.ead.editor.model.Model.SelectionListener;
+import es.eucm.ead.editor.model.Q;
 import es.eucm.ead.editor.model.events.LoadEvent;
+import es.eucm.ead.editor.model.events.SelectionEvent;
+import es.eucm.ead.editor.view.widgets.IconButton;
 import es.eucm.ead.editor.view.widgets.PositionedHiddenPanel;
 import es.eucm.ead.editor.view.widgets.editionview.prefabs.PrefabComponentPanel;
 import es.eucm.ead.engine.I18N;
-import es.eucm.ead.schema.components.ModelComponent;
 import es.eucm.ead.schema.editor.components.VariableDef;
 import es.eucm.ead.schema.editor.components.VariableDef.Type;
 import es.eucm.ead.schema.editor.components.Variables;
+import es.eucm.ead.schema.entities.ModelEntity;
 
 public class VariablesTable extends PositionedHiddenPanel implements
 		TextInputListener, ModelListener<LoadEvent> {
@@ -71,6 +79,8 @@ public class VariablesTable extends PositionedHiddenPanel implements
 	private static final int MAX_CHAR = 15;
 
 	private static final float LATERAL_PAD = 20, PAD = 10;
+
+	private static final String IC_LOCAL = "clone80x80", IC_GLOBAL = "first";
 
 	private static ClickListener varPressed = new ClickListener() {
 		public void clicked(InputEvent event, float x, float y) {
@@ -82,15 +92,25 @@ public class VariablesTable extends PositionedHiddenPanel implements
 
 	private I18N i18n;
 
-	private Table varTable;
+	private ScrollPane variablesScroll;
 
-	private Variables variables;
+	private Table globalVarTable;
+
+	private Table localVarTable;
+
+	private Variables globalVar;
+
+	private Variables localVar;
 
 	private Controller controller;
 
 	private Skin skin;
 
 	private VariableSelectorWidget objetive;
+
+	private Toasts toasts;
+
+	private SelectionListener sceneListener;
 
 	public VariablesTable(Skin skin, Position position,
 			final PrefabComponentPanel reference, Controller controller) {
@@ -104,18 +124,34 @@ public class VariablesTable extends PositionedHiddenPanel implements
 
 		Label title = new Label(i18n.m("general.variablesList"), skin);
 		add(title).center().pad(LATERAL_PAD);
+		final IconButton global = new IconButton(IC_GLOBAL, 0, skin, "white");
+		final IconButton local = new IconButton(IC_LOCAL, 0, skin, "white");
+		final Cell scopeCell = add(local);
 		row();
 
+		sceneListener = new SelectionListener() {
+
+			@Override
+			public void modelChanged(SelectionEvent event) {
+				if (event.getType() == SelectionEvent.Type.FOCUSED) {
+					updateLocalVariables();
+				}
+			}
+
+			@Override
+			public boolean listenToContext(String contextId) {
+				return contextId.equals(Selection.SCENE);
+			}
+		};
+
+		controller.getModel().addSelectionListener(sceneListener);
 		controller.getModel().addLoadListener(this);
 
-		varTable = new Table(skin);
-		initialize();
-		ScrollPane sp = new ScrollPane(varTable);
+		globalVarTable = new Table(skin);
+		localVarTable = new Table(skin);
 
-		add(sp);
-	}
+		variablesScroll = new ScrollPane(localVarTable);
 
-	private void initialize() {
 		TextButton newVar = new TextButton(i18n.m("general.newVariable"), skin,
 				"white");
 		newVar.addListener(new ClickListener() {
@@ -125,8 +161,34 @@ public class VariablesTable extends PositionedHiddenPanel implements
 			}
 		});
 
-		varTable.add(newVar).pad(LATERAL_PAD).expandX().fill().left();
-		varTable.row();
+		final TextButton change = new TextButton(
+				i18n.m("general.localVariable"), skin);
+		add(change).colspan(2);
+		row();
+		add(variablesScroll).expandX().fill().colspan(2);
+		row();
+		add(newVar).pad(LATERAL_PAD).expandX().fill().left().colspan(2);
+
+		ClickListener scopeListener = new ClickListener() {
+			@Override
+			public void clicked(InputEvent event, float x, float y) {
+				scopeCell.setActor(null);
+				if (variablesScroll.getWidget() == globalVarTable) {
+					variablesScroll.setWidget(null);
+					variablesScroll.setWidget(localVarTable);
+					scopeCell.setActor(local);
+					change.setText(i18n.m("general.localVariable"));
+				} else {
+					variablesScroll.setWidget(null);
+					variablesScroll.setWidget(globalVarTable);
+					scopeCell.setActor(global);
+					change.setText(i18n.m("general.globalVariable"));
+				}
+			}
+		};
+		global.addListener(scopeListener);
+		local.addListener(scopeListener);
+
 	}
 
 	private void showVarDialog() {
@@ -138,31 +200,41 @@ public class VariablesTable extends PositionedHiddenPanel implements
 	public void input(String text) {
 		if (text != null && !text.isEmpty()
 				&& text.equals(text.replace(" ", ""))) {
-			if (variables == null) {
-				variables = new Variables();
-				controller.action(AddVariables.class, variables);
+			if (globalVar == null) {
+				globalVar = new Variables();
+				controller.action(AddVariables.class, globalVar);
 			}
 
 			if (text.length() > MAX_CHAR) {
 				text = text.substring(0, MAX_CHAR - 1);
 			}
 
-			if (!existVariableWithName(text)) {
+			Table varTable = (Table) variablesScroll.getWidget();
+			Variables current = varTable == globalVarTable ? globalVar
+					: localVar;
+			
+			if (!existVariableWithName(text, current)) {
 				VariableDef newVariable = newVariableDef(text);
-				controller.action(AddNewVariableDef.class, newVariable,
-						variables);
+				controller
+						.action(AddNewVariableDef.class, newVariable, current);
 
-				addVariableButton(text);
+				addVariableButton(text, varTable);
 			}
 
 			variablePressedAndSelected(text);
+		} else {
+			toasts = ((MockupViews) controller.getViews()).getToasts();
+			toasts.showNotification(controller.getApplicationAssets().getI18N()
+					.m("error.variables.invalidText"), 3f);
 		}
 
 	}
 
 	private void variablePressedAndSelected(String text) {
 		if (objetive != null) {
-			objetive.changeVarName(text);
+			Table varTable = (Table) variablesScroll.getWidget();
+			boolean isLocal = varTable == localVarTable ? true : false;
+			objetive.changeVarName(text, isLocal);
 			objetive.selectedVariable(true);
 			objetive.getVarNameButton().setChecked(false);
 			hide();
@@ -174,7 +246,7 @@ public class VariablesTable extends PositionedHiddenPanel implements
 	public void canceled() {
 	}
 
-	private void addVariableButton(String name) {
+	private void addVariableButton(String name, Table varTable) {
 		TextButton variable = new TextButton(name, skin, "white");
 		variable.addListener(varPressed);
 		variable.setUserObject(this);
@@ -194,26 +266,33 @@ public class VariablesTable extends PositionedHiddenPanel implements
 	}
 
 	public void updatePanel() {
-		if (variables == null) {
-			updateVariables();
+		if (globalVar == null) {
+			updateGlobalVariables();
 		}
-		varTable.clearChildren();
-		initialize();
-		if (variables != null) {
-			for (VariableDef var : variables.getVariablesDefinitions()) {
-				addVariableButton(var.getName());
-			}
+		globalVarTable.clearChildren();
+		for (VariableDef var : globalVar.getVariablesDefinitions()) {
+			addVariableButton(var.getName(), globalVarTable);
 		}
+
+		if (localVar == null) {
+			updateLocalVariables();
+		}
+		localVarTable.clearChildren();
+		for (VariableDef var : localVar.getVariablesDefinitions()) {
+			addVariableButton(var.getName(), localVarTable);
+		}
+
 	}
 
-	private void updateVariables() {
-		variables = null;
-		for (ModelComponent component : controller.getModel().getGame()
-				.getComponents()) {
-			if (component instanceof Variables) {
-				variables = (Variables) component;
-			}
-		}
+	private void updateGlobalVariables() {
+		globalVar = Q.getComponent(controller.getModel().getGame(),
+				Variables.class);
+	}
+
+	private void updateLocalVariables() {
+		ModelEntity scene = (ModelEntity) controller.getModel().getSelection()
+				.getSingle(Selection.SCENE);
+		localVar = Q.getComponent(scene, Variables.class);
 	}
 
 	public void show() {
@@ -239,11 +318,11 @@ public class VariablesTable extends PositionedHiddenPanel implements
 	@Override
 	public void modelChanged(LoadEvent event) {
 		if (event.getType() == LoadEvent.Type.LOADED) {
-			updateVariables();
+			updateGlobalVariables();
 		}
 	}
 
-	public boolean existVariableWithName(String name) {
+	public boolean existVariableWithName(String name, Variables variables) {
 		for (VariableDef var : variables.getVariablesDefinitions()) {
 			if (var.getName().equals(name)) {
 				return true;

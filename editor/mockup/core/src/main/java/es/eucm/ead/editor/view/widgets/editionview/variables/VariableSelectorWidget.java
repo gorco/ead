@@ -76,16 +76,25 @@ public class VariableSelectorWidget extends Table {
 
 	private Cell stateButtonCell;
 
+	private boolean local;
+
 	public VariableSelectorWidget(Controller controller, boolean allowOpossite) {
 		this(controller, allowOpossite, "", "");
 	}
 
 	public VariableSelectorWidget(Controller controller, boolean allowOpossite,
 			String varName, String state) {
+		this(controller, allowOpossite, "", "", false);
+	}
+
+	public VariableSelectorWidget(Controller controller, boolean allowOpossite,
+			String varName, String state, boolean isLocal) {
 		super();
 
 		Skin skin = controller.getApplicationAssets().getSkin();
 		i18n = controller.getApplicationAssets().getI18N();
+
+		local = isLocal;
 
 		states = new Array<String>();
 		states.add(i18n.m("edition.true"));
@@ -188,7 +197,12 @@ public class VariableSelectorWidget extends Table {
 	}
 
 	public void changeVarName(String text) {
+		changeVarName(text, false);
+	}
+
+	public void changeVarName(String text, boolean local) {
 		nameButton.setText(text);
+		this.local = local;
 		ChangeEvent changeEvent = Pools.obtain(ChangeEvent.class);
 		fire(changeEvent);
 		Pools.free(changeEvent);
@@ -202,4 +216,7 @@ public class VariableSelectorWidget extends Table {
 		return stateButton;
 	}
 
+	public boolean isLocal() {
+		return local;
+	}
 }

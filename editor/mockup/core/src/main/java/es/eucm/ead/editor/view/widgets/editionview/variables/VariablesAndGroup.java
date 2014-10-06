@@ -41,6 +41,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.utils.Array;
 
 import es.eucm.ead.editor.control.Controller;
 
@@ -93,9 +94,9 @@ public class VariablesAndGroup extends VariablesOperationTable {
 		return "edition.addAndCondition";
 	}
 
-	public Actor variableWidget(String name, String state) {
+	public Actor variableWidget(String name, String state, boolean isLocal) {
 		VariableSelectorWidget button = new VariableSelectorWidget(controller,
-				allowOpposite, name, state);
+				allowOpposite, name, state, isLocal);
 		TextButton nameVar = button.getVarNameButton();
 		nameVar.setUserObject(variablesToSelect);
 		nameVar.addListener(variablePressed);
@@ -107,7 +108,23 @@ public class VariablesAndGroup extends VariablesOperationTable {
 
 	@Override
 	public Actor variableWidget() {
-		return variableWidget("", "");
+		return variableWidget("", "", false);
+	}
+
+	public Array<VariableSelectorWidget> getVariablesWidgets() {
+		Array<VariableSelectorWidget> varArray = new Array<VariableSelectorWidget>();
+
+		for (Actor actor : getChildren()) {
+			if (actor instanceof VariableSelectorWidget) {
+				VariableSelectorWidget varWidget = (VariableSelectorWidget) actor;
+				String variable = varWidget.getExpression();
+				if (variable != null) {
+					varArray.add(varWidget);
+				}
+			}
+		}
+
+		return varArray;
 	}
 
 	@Override
@@ -128,5 +145,17 @@ public class VariablesAndGroup extends VariablesOperationTable {
 
 	public boolean isEmpty() {
 		return getExpression().equals("btrue");
+	}
+
+	@Override
+	protected void addClicked(Actor newActor) {
+		TextButton button = ((VariableSelectorWidget) newActor)
+				.getVarNameButton();
+		button.setChecked(true);
+
+		VariablesTable varTable = (VariablesTable) button.getUserObject();
+		varTable.setObjetive((VariableSelectorWidget) button.getParent());
+		button.setChecked(true);
+		varTable.show();
 	}
 }

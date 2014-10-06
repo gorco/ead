@@ -170,9 +170,9 @@ public abstract class ConditionalPanel extends PrefabComponentPanel {
 	private Actor evaluateEq(VariablesAndGroup andGroup, String arg0,
 			String arg1) {
 		if (arg0.contains("$") && !arg0.contains(" ")) {
-			return andGroup.variableWidget(arg0.replace("$", ""), arg1);
+			return andGroup.variableWidget(arg0.replace("$", ""), arg1, false);
 		} else {
-			return andGroup.variableWidget(arg1.replace("$", ""), arg0);
+			return andGroup.variableWidget(arg1.replace("$", ""), arg0, false);
 		}
 	}
 
