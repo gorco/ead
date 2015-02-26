@@ -125,7 +125,7 @@ public class ProjectScenesGallery extends ScenesGallery {
 		gallery.uncheckAll();
 		if (resource != null) {
 			Cell cell = (Cell) EngineUtils.getDirectChild(gallery.getGrid(),
-					gallery.findActor(resource));
+					findActor(resource));
 			if (cell != null) {
 				cell.checked(true);
 			}

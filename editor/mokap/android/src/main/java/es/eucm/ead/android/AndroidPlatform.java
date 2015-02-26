@@ -427,6 +427,16 @@ public class AndroidPlatform extends MokapPlatform {
 		sendMail(null, controller);
 	}
 
+	@Override
+	public boolean isConnected() {
+		Context context = ((EditorActivity) Gdx.app).getContext();
+		ConnectivityManager connectivity = (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo state = connectivity.getActiveNetworkInfo();
+
+		return state != null && state.isConnected();
+	}
+
 	public void sendProject(FileHandle projectHandle, I18N i18n,
 			final ProjectSentListener listener) {
 		Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -504,19 +514,16 @@ public class AndroidPlatform extends MokapPlatform {
 							String path = androidPlatform.getStringFromIntent(
 									activity, data, pathColumn);
 							if (path == null) {
-								Context context = ((EditorActivity) Gdx.app)
-										.getContext();
-								ConnectivityManager connectivity = (ConnectivityManager) context
-										.getSystemService(Context.CONNECTIVITY_SERVICE);
-								NetworkInfo state = connectivity
-										.getActiveNetworkInfo();
 
-								if (state == null || !state.isConnected()) {
+								if (!((MokapPlatform) controller.getPlatform())
+										.isConnected()) {
 									showToast(FileChooserListener.Result.NO_CONNECTION
 											.getI18nKey());
 								} else {
 									String url = data.getDataString();
 									try {
+										Context context = ((EditorActivity) Gdx.app)
+												.getContext();
 										InputStream input = context
 												.getContentResolver()
 												.openInputStream(Uri.parse(url));

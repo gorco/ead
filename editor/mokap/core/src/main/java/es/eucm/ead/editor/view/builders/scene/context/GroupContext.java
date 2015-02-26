@@ -72,7 +72,6 @@ public abstract class GroupContext extends AbstractWidget {
 		iconsContainer.setTouchable(Touchable.disabled);
 		addActor(iconsContainer);
 		addActor(gallery = new Gallery(1, COLUMNS, style.galleryStyle));
-		gallery.setCancelTouchFocus(false);
 	}
 
 	@Override

@@ -57,8 +57,7 @@ public class NavigationGallery extends ScenesGallery {
 
 	public NavigationGallery(Controller controller) {
 		super(1.75f, 1, controller, SkinConstants.STYLE_NAVIGATION);
-		gallery.pad(0);
-		gallery.setCancelTouchFocus(false);
+        gallery.pad(0);
 		i18N = controller.getApplicationAssets().getI18N();
 	}
 
@@ -73,11 +72,7 @@ public class NavigationGallery extends ScenesGallery {
 	public void prepare() {
 		super.prepare();
 
-		for (Actor actor : gallery.getChildren()) {
-			if (actor instanceof Cell) {
-				((Cell) actor).checked(false);
-			}
-		}
+		gallery.uncheckAll();
 
 		Context context = controller.getModel().getSelection()
 				.getContext(Selection.SCENE);
@@ -85,7 +80,7 @@ public class NavigationGallery extends ScenesGallery {
 			String sceneId = controller.getModel().getIdFor(
 					context.getSelection()[0]);
 			if (sceneId != null) {
-				Actor actor = gallery.findActor(sceneId);
+				Actor actor = findActor(sceneId);
 				if (actor instanceof Cell) {
 					((Cell) actor).checked(true);
 				}

@@ -89,7 +89,7 @@ import es.eucm.ead.engine.gdx.URLFileHandle;
 public abstract class Assets extends Json implements FileHandleResolver,
 		AssetErrorListener {
 
-	public static final String URL_PATTERN = "^(https?:\\/\\/)([\\da-z\\.-]+)\\.([a-z\\.]{2,6})([\\/\\w \\.-]*)*\\/?$";
+	public static final String URL_PATTERN = "^(https?:\\/\\/)([\\da-z\\.-]+)\\.([a-z\\.]{2,6})([\\/\\w \\.-]*)*\\/?(\\?.*)?$";
 
 	/**
 	 * Default time slot for loading assets.

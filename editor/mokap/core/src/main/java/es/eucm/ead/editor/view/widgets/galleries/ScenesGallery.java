@@ -130,7 +130,12 @@ public class ScenesGallery extends ContextMenuGallery implements
 	}
 
 	@Override
-	protected void prepareAddButton(Actor actor) {
+	public void loadContents(String search) {
+
+	}
+
+	@Override
+	protected void prepareActionButton(Actor actor) {
 		WidgetBuilder.actionOnClick(actor, AddScene.class);
 	}
 
